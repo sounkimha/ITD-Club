@@ -2,3 +2,81 @@ api 명세서
 
 
 https://heayn345.atlassian.net/l/cp/rPiXV632
+
+
+
+
+from flask import Flask, request, jsonify
+import snscrape.modules.twitter as sntwitter
+from textblob import TextBlob
+from collections import Counter
+from datetime import datetime
+
+app = Flask(__name__)
+
+# 트위터 크롤링 함수
+def scrape_twitter(keyword, since_date, limit=100):
+    query = f"{keyword} since:{since_date}"
+    tweets = []
+    for i, tweet in enumerate(sntwitter.TwitterSearchScraper(query).get_items()):
+        if i >= limit:
+            break
+        tweets.append({
+            "content": tweet.content,
+            "date": tweet.date.strftime('%Y-%m-%d %H:%M:%S')
+        })
+    return tweets
+
+# 감성 분석 함수
+def analyze_sentiment(data):
+    sentiment = {"positive": 0, "negative": 0, "neutral": 0}
+    for item in data:
+        polarity = TextBlob(item["content"]).sentiment.polarity
+        if polarity > 0:
+            sentiment["positive"] += 1
+        elif polarity < 0:
+            sentiment["negative"] += 1
+        else:
+            sentiment["neutral"] += 1
+    return sentiment
+
+# 키워드 분석 함수
+def extract_keywords(data):
+    all_words = []
+    for item in data:
+        all_words.extend(item["content"].split())
+    return Counter(all_words).most_common(10)
+
+@app.route('/api/sns-analysis', methods=['GET'])
+def sns_analysis():
+    keyword = request.args.get('keyword')
+    since_date = request.args.get('since_date', datetime.now().strftime('%Y-%m-%d'))
+    limit = int(request.args.get('limit', 100))
+
+    if not keyword:
+        return jsonify({"error": "Keyword is required"}), 400
+
+    # 데이터 수집
+    twitter_data = scrape_twitter(keyword, since_date, limit)
+
+    # 분석 수행
+    sentiment = analyze_sentiment(twitter_data)
+    keywords = extract_keywords(twitter_data)
+
+    # 결과 반환
+    return jsonify({
+        "keyword": keyword,
+        "since_date": since_date,
+        "sources": {
+            "twitter_count": len(twitter_data)
+        },
+        "mention_count": len(twitter_data),
+        "sentiment_analysis": sentiment,
+        "top_keywords": keywords,
+        "latest_data": {
+            "twitter": twitter_data[:5]
+        }
+    })
+
+if __name__ == '__main__':
+    app.run(debug=True)
