@@ -29,3 +29,6 @@
 ## 진행 이력 및 현황
 24/12/19 ~ : 
 개발 환경 구성
+
+# sns 크롤링 api 명세서
+https://heayn345.atlassian.net/l/cp/rPiXV632
