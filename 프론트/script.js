@@ -1,4 +1,4 @@
-const apiKey = "YOUR_API_KEY"; // Alpha Vantage 또는 다른 API 키를 입력하세요.
+const apiKey = "UD7C7A3QU6JVD62L"; // Alpha Vantage 또는 다른 API 키를 입력하세요.
 const apiUrl = "https://www.alphavantage.co/query"; // Alpha Vantage API
 
 const stockChart = document.getElementById('stockChart').getContext('2d');
