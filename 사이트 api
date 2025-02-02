@@ -1,0 +1,76 @@
+import requests
+
+def post_stock_code(api_key, stock_code):
+    """
+    사용자로부터 주식 코드 입력받아 POST 요청을 보내는 함수
+    :param api_key: API 키
+    :param stock_code: 주식 코드 (예: AAPL, MSFT)
+    :return: POST 요청 결과 (JSON 형식)
+    """
+    url = "https://api.stockdata.com/v1/submit-code"
+    data = {"stock_code": stock_code}
+    headers = {"Authorization": f"Bearer {api_key}"}
+
+    response = requests.post(url, json=data, headers=headers)
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return {"error": response.status_code, "message": response.text}
+
+def get_stock_data(api_key, stock_code):
+    """
+    주식 데이터를 GET 요청으로 가져오는 함수
+    :param api_key: API 키
+    :param stock_code: 주식 코드 (예: AAPL, MSFT)
+    :return: 주식 데이터 (JSON 형식)
+    """
+    url = f"https://api.stockdata.com/v1/stock-data"
+    params = {"stock_code": stock_code}
+    headers = {"Authorization": f"Bearer {api_key}"}
+
+    response = requests.get(url, params=params, headers=headers)
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return {"error": response.status_code, "message": response.text}
+
+def get_chart_data(api_key, stock_code):
+    """
+    차트 데이터를 GET 요청으로 가져오는 함수
+    :param api_key: API 키
+    :param stock_code: 주식 코드
+    :return: 차트 데이터 (JSON 형식)
+    """
+    url = f"https://api.stockdata.com/v1/chart-data"
+    params = {"stock_code": stock_code}
+    headers = {"Authorization": f"Bearer {api_key}"}
+
+    response = requests.get(url, params=params, headers=headers)
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return {"error": response.status_code, "message": response.text}
+
+# 사용 예시
+if __name__ == "__main__":
+    API_KEY = "your_api_key_here"  # 여기에 API 키 입력
+
+    # 사용자 입력: 주식 코드
+    stock_code = input("주식 코드를 입력하세요 (예: AAPL): ")
+
+    # 주식 코드 POST 요청
+    post_response = post_stock_code(API_KEY, stock_code)
+    if "error" in post_response:
+        print("POST 요청 실패:", post_response)
+    else:
+        print("POST 요청 성공:", post_response)
+
+    # 차트 데이터 GET 요청
+    chart_data = get_chart_data(API_KEY, stock_code)
+    if "error" in chart_data:
+        print("차트 데이터 GET 요청 실패:", chart_data)
+    else:
+        print("차트 데이터 GET 요청 성공:", chart_data)
