@@ -1,13 +1,14 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import yfinance as yf
 from flask_cors import CORS
 
-# ✅ Flask 앱 객체 생성 (순서 중요)
+# ✅ Flask 앱 객체 생성
 app = Flask(__name__)
 CORS(app)  # CORS 설정 추가 (프론트엔드 연동)
 
 def format_stock_code(stock_code):
     """ 한국 주식이면 .KS를 붙이고, 해외 주식이면 그대로 반환 """
+    stock_code = stock_code.strip().replace('\n', '').replace('%0A', '').replace('\r', '')  # ✅ 개행 문자 완전 제거
     if stock_code.isdigit():  # 종목 코드가 숫자로만 되어 있다면 한국 주식
         return f"{stock_code}.KS"  # KOSPI 종목 코드
     return stock_code  # 해외 주식은 그대로 사용
@@ -18,6 +19,9 @@ def get_stock_info(stock_code):
         formatted_code = format_stock_code(stock_code)
         stock = yf.Ticker(formatted_code)
         info = stock.info
+
+        if not info or 'currentPrice' not in info:
+            return {"error": "Yahoo Finance에서 데이터를 가져오지 못했습니다."}
 
         stock_data = {
             "stock_code": stock_code,
@@ -33,9 +37,17 @@ def get_stock_info(stock_code):
     except Exception as e:
         return {"error": f"데이터를 가져오는 중 오류 발생: {str(e)}"}
 
-@app.route('/stock_info/<stock_code>', methods=['GET'])
-def stock_info(stock_code):
-    """ 주식 기본 정보 조회 API """
+@app.route('/stock_info', methods=['GET'])
+def stock_info():
+    """ 주식 기본 정보 조회 API - Query Parameter 방식 지원 """
+    stock_code = request.args.get("stock_code", "").strip().replace('\n', '').replace('%0A', '').replace('\r', '')  # ✅ 개행 문자 완전 제거
+
+    # ✅ 요청된 종목 코드 출력 (로그 확인용)
+    print(f"📌 Received stock_code: '{stock_code}'")
+
+    if not stock_code:
+        return jsonify({"error": "stock_code 파라미터가 필요합니다."}), 400
+
     data = get_stock_info(stock_code)
     return jsonify(data)
 
@@ -49,7 +61,7 @@ def get_financials(stock_code):
         income_statement = stock.financials
         cash_flow = stock.cashflow
 
-        # ✅ 만약 데이터가 없으면 에러 반환
+        # ✅ 데이터가 없으면 에러 반환
         if balance_sheet.empty or income_statement.empty or cash_flow.empty:
             return {"error": "Yahoo Finance에서 제공하는 재무제표 데이터가 없습니다."}
 
@@ -73,9 +85,14 @@ def get_financials(stock_code):
     except Exception as e:
         return {"error": f"재무제표 데이터를 가져오는 중 오류 발생: {str(e)}"}
 
-@app.route('/financials/<stock_code>', methods=['GET'])
-def financials(stock_code):
-    """ 주식 재무제표 조회 API """
+@app.route('/financials', methods=['GET'])
+def financials():
+    """ 주식 재무제표 조회 API - Query Parameter 방식 지원 """
+    stock_code = request.args.get("stock_code", "").strip().replace('\n', '').replace('%0A', '').replace('\r', '')  # ✅ 개행 문자 완전 제거
+
+    if not stock_code:
+        return jsonify({"error": "stock_code 파라미터가 필요합니다."}), 400
+
     data = get_financials(stock_code)
     return jsonify(data)
 
@@ -88,18 +105,46 @@ def get_chart_data(stock_code):
         dates = hist.index.strftime("%Y-%m-%d").tolist()
         prices = hist["Close"].tolist()
 
+        if not dates or not prices:
+            return {"error": "차트 데이터를 가져올 수 없습니다."}
+
         return {"dates": dates, "prices": prices}
     except Exception as e:
         return {"error": f"차트 데이터를 가져오는 중 오류 발생: {str(e)}"}
 
-@app.route('/chart_data/<stock_code>', methods=['GET'])
-def chart_data(stock_code):
-    """ 주가 차트 데이터 제공 API """
+@app.route('/chart_data', methods=['GET'])
+def chart_data():
+    """ 주가 차트 데이터 제공 API - Query Parameter 방식 지원 """
+    stock_code = request.args.get("stock_code", "").strip().replace('\n', '').replace('%0A', '').replace('\r', '')  # ✅ 개행 문자 완전 제거
+
+    if not stock_code:
+        return jsonify({"error": "stock_code 파라미터가 필요합니다."}), 400
+
     data = get_chart_data(stock_code)
     return jsonify(data)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # ✅ Flask에서 등록된 엔드포인트 출력 (디버깅용)
+    print("\n📌 Registered Routes:")
+    for rule in app.url_map.iter_rules():
+        print(f"🔹 {rule}")
+
+    app.run(debug=False)  # ✅ debug=False 설정으로 요청 차이 줄이기
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
