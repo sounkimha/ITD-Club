@@ -37,3 +37,6 @@ https://leah3535.atlassian.net/wiki/x/AQAf
 
 #명세서
 https://leah3535.atlassian.net/wiki/x/AoAo
+
+#회원가입 명세서
+https://leah3535.atlassian.net/wiki/x/AgBh
